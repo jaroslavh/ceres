@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+jupyterlab = "*"
+numpy = "*"
+pandas = "*"
+matplotlib = "*"
+scikit-learn = "*"
+scipy = "*"
+pynndescent = "*"
+h5py = "*"
+plotly = "*"
+numba = "*"
+matlabengine = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"
