@@ -46,15 +46,15 @@ class Experiment(object):
                 print('  Class:      ', class_id)
                 t0 = time.time()
 
-                # specific handling for DS3 algorithm
-                if algorithm_func == algorithms.ds3:
-                    data = self.dataset.get_class_full_matrix(class_id, params['similarity'])
-                    print("    Full-similarity matrix completed. DS3 starting.")
-                    prototype_indices = algorithm_func(data, len(data))
+                # # specific handling for DS3 algorithm
+                # if algorithm_func == algorithms.ds3:
+                #     data = self.dataset.get_class_full_matrix(class_id, params['similarity'])
+                #     print("    Full-similarity matrix completed. DS3 starting.")
+                #     prototype_indices = algorithm_func(data, len(data))
                 # all other algorithms
-                else:
-                    prototype_indices = algorithm_func(self.dataset.train[class_id], self.coverage, **params,
-                                                       threshold=self.homogeneities[class_id])
+
+                prototype_indices = algorithm_func(self.dataset.train[class_id], self.coverage, **params,
+                                                   threshold=self.homogeneities[class_id])
 
                 prototype = [self.dataset.train[class_id][i] for i in prototype_indices]
                 results[-1].add_cluster_prototype(prototype, class_id)
