@@ -1,8 +1,8 @@
 import time
 
-from dataset import Dataset
-from result import Result
-import algorithms
+from src.dataset import Dataset
+from src.result import Result
+import src.algorithms as algorithms
 
 
 class Experiment(object):
@@ -20,18 +20,17 @@ class Experiment(object):
     :type results: list
     """
 
-    def __init__(self, dataset: Dataset, coverage: float, algorithms: list,
-                 params: list, homogeneities: dict):
+    def __init__(self, dataset: Dataset, algorithms: list,
+                 params: list, distance_thresholds: dict):
         """Constructor method"""
 
         self.dataset = dataset
-        self.coverage = coverage
         self.algorithms = algorithms
         self.algorithm_params = params
         self.results = [None] * len(self.algorithms)
-        self.homogeneities = homogeneities
+        self.distance_thresholds = distance_thresholds
 
-    def run(self):
+    def run(self, logger):
         """Run the experiment that was set up.
 
         :return: list of Results for each algorithm in algorithms dataset
@@ -40,24 +39,26 @@ class Experiment(object):
 
         results = []
         for algorithm_func, params in zip(self.algorithms, self.algorithm_params):
-            results.append(Result(algorithm_func, params))
-            print('Algorithm:', algorithm_func)
+            results.append(Result(algorithm_func.__name__, params))
+            logger.info(f"\t\tAlgorithm: {algorithm_func.__name__}")
             for class_id in self.dataset.classes:  # TODO  remove comment class_samples in self.dataset.train.items():
-                print('  Class:      ', class_id)
                 t0 = time.time()
 
                 # specific handling for DS3 algorithm
                 if algorithm_func == algorithms.ds3:
                     data = self.dataset.get_class_full_matrix(class_id, params['similarity'])
-                    print("    Full-similarity matrix completed. DS3 starting.")
+                    logger.info("\t\t\tFull-similarity matrix completed. DS3 starting.")
                     prototype_indices = algorithm_func(data, len(data))
+                elif algorithm_func == algorithms.random_select:
+                    prototype_indices = algorithm_func(self.dataset.train[class_id],  **params)
                 # all other algorithms
                 else:
-                    prototype_indices = algorithm_func(self.dataset.train[class_id], self.coverage, **params,
-                                                       threshold=self.homogeneities[class_id])
+                    prototype_indices = algorithm_func(self.dataset.train[class_id],
+                                                       max_distance=self.distance_thresholds[class_id],
+                                                       **params)
 
                 prototype = [self.dataset.train[class_id][i] for i in prototype_indices]
                 results[-1].add_cluster_prototype(prototype, class_id)
                 t1 = time.time()
-                print(f"Prototype size: {len(prototype)},    Time       {t1 - t0}")
+                logger.info(f"\t\t\tPrototype size {class_id}: {len(prototype)}, Time {t1 - t0}")
         return results

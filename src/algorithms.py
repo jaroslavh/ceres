@@ -1,12 +1,14 @@
+from collections import defaultdict
+
 import numpy as np
-import crs
+import src.crs as crs
 
 import matlab.engine
+import logging
+import src.nndescent as nndescent
 
-import nndescent
 
-
-def random_select(samples: np.ndarray, coverage: float, select: float = 0.05, threshold=None):
+def random_select(samples: np.ndarray, select: float = 0.05):
     """Assumes df_index to be a set and num to be an int.
        Returns random subset of size n from input set of indices."""
     number_to_select = int(np.ceil(len(samples) * select))
@@ -14,91 +16,60 @@ def random_select(samples: np.ndarray, coverage: float, select: float = 0.05, th
     return indices
 
 
-def delta_one_shot(samples: np.ndarray, coverage: float, delta: float, similarity):
-    """Goes once through data starting at first point, it selects as
-           representatives the points that are not close to a representative
-           previously selected. Thus, it is not optimal, however it always goes
-           through the data only once.
-       Returns np.ndarray of selected representatives."""
-    representatives = set()
-
-    for index, val in enumerate(samples):
-        if index > len(samples) * coverage:
-            break
-
-        for rep in representatives:
-            if similarity(val, samples[rep]) >= delta:
-                break
-        else:
-            representatives.add(index)
-
-    # return [samples[i] for i in representatives]
-    return representatives
-
-
-def delta_medoids(samples: np.ndarray, coverage: float, dist, threshold: float):
+def delta_medoids(samples: np.ndarray, distance_function, max_distance: float):
     t = 0  # iteration number
     representatives = {0: set()}
 
     while True:
-        print('        t =', t, len(representatives[t]), ' number of representatives at iteration t')
+        logging.info(f'\t\t\titeration:{t}, reps:{len(representatives[t])}')
         t += 1
-        neighborhoods = dict()  # neighborhoods inside a cluster - consists of indices
-        for rep in representatives[t - 1]:
-            neighborhoods[rep] = {rep}
-
+        clusters = defaultdict(set)
+        # repAssign routine
         for index, val in enumerate(samples):
-            sim = np.inf
+            dist = np.inf
             representative = None
-            for rep in neighborhoods.keys():  # finding correct neighborhood
-                tmp_sim = dist(val, samples[rep])
-                if tmp_sim < sim:
+            for rep in clusters.keys():  # finding correct neighborhood
+                tmp_dist = distance_function(val, samples[rep])
+                if tmp_dist < dist:
                     representative = rep
-                    sim = tmp_sim
-            if sim < threshold:  # located existing neighborhood
-                neighborhoods[representative].add(index)
+                    dist = tmp_dist
+            if dist < max_distance:  # located existing neighborhood
+                clusters[representative].add(index)
             else:  # creating new neighborhood
-                neighborhoods[index] = {index}
+                clusters[index] = {index}
 
         representatives[t] = set()
-        for val in neighborhoods.values():
+
+        for cluster in clusters.values():
             # finding best representative
             min_sum = np.inf
             best_rep = None
-            for i in val:
+            for i in cluster:  # argmin on distances in cluster
                 dist_sum = 0
-                for j in val:
-                    dist_sum += dist(samples[i], samples[j])
+                for j in cluster:
+                    tmp_dist = distance_function(samples[i], samples[j])
+                    if tmp_dist < max_distance:
+                        dist_sum += tmp_dist
                 if dist_sum < min_sum:
                     min_sum = dist_sum
                     best_rep = i
 
             representatives[t].add(best_rep)
+
         if representatives[t] == representatives[t - 1]:
             break
-        if len(representatives) > 2 and representatives[t] == representatives[t - 2]:
-            break
+        # if len(representatives) > 2 and representatives[t] == representatives[t - 2]:
+        #     break
     return representatives[t]
 
 
 def nndescent_reverse_neighbors(samples, coverage: float,
-                                sample_rate: float, similarity, K: int = None, threshold: float = 0.6):
-    if K == None:
-        sample_size = len(samples)
-        # K = int(np.ceil(np.log(len(samples) + 1))) + 2                        #A
-        # K = int(np.ceil(np.sqrt(len(samples) + 1) * (1 - threshold)))         #B
-        # K = int(np.sqrt(len(samples)/np.log(len(samples)))                    #C
-        # K = int(np.sqrt(len(samples)/np.log(len(samples))) * (1 - threshold))  #D
-        K = int(np.sqrt(sample_size / (np.log2(sample_size) * 2)) * (1 + (1 - threshold)))  # E
-        if K < 5:
-            K = 5
-
-    print('    K set to:', K)
+                                sample_rate: float, similarity, K: int = None, max_distance: float = 0.6):
     representatives = crs.select_representatives_for_one_class(samples,
-                                                               similarity_threshold=threshold,
+                                                               distance_threshold=max_distance,
                                                                coverage=coverage,
                                                                sample_rate=sample_rate,
-                                                               similarity_func=similarity,
+                                                               dist_func=similarity,
                                                                pynndescent_k=K)
     return representatives
 
@@ -143,6 +114,6 @@ def ds3(matrix: np.ndarray, shape: int):
     eng.quit()
     # transform results from float to int and subtract 1 -> matlab to python index correction
     if type(ret) == float:
-        print(f"Found only one representative {ret}")
+        logging.info(f"Found only one representative {ret}")
         return [int(ret) - 1]
     return [int(i) - 1 for i in ret[0]]
