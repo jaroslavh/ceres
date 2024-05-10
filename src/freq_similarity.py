@@ -7,7 +7,7 @@ from numba.core import types
 @njit
 def freq_sim(host_a, host_b, timewindow_num: int = 288):
     """Return frequency similarity between 2 hosts for given time.
-    
+
     :param host_a: frequencies for each visited host {host1:freq1, host2:freq2}
     :type host_a: dict
     :param host_b: frequencies for each visited host {host1:freq1, host2:freq2}
@@ -23,7 +23,7 @@ def freq_sim(host_a, host_b, timewindow_num: int = 288):
 
     # no hosts in common
     if not ha.intersection(hb):
-        return 2.0
+        return 0.0
 
     # calculating similarity
     sum_FaFb = 0.0
@@ -42,20 +42,24 @@ def freq_sim(host_a, host_b, timewindow_num: int = 288):
         sum_Fa2 += Fa ** 2
         sum_Fb2 += Fb ** 2
     if sum_FaFb == 0.0:
-        return 2.0
+        res = 0.0
     else:
         res = sum_FaFb / (np.sqrt(sum_Fa2) * np.sqrt(sum_Fb2))
 
-    return 1 - res
+    return res
+
 
 def create_numba_dict(x: list):
+    """
+    Create a numba dict from list of frequencies.
+    """
     freq_dict = Dict.empty(
         key_type=types.unicode_type,
         value_type=types.int64,
     )
 
     for k, v in x:
-        if v != None:
+        if v is not None:
             freq_dict[k] = int(v)
 
     return freq_dict
