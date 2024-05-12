@@ -1,4 +1,4 @@
-from heap_item import heapItem
+from src.heap_item import heapItem
 import heapq
 
 class SampleNN(object):

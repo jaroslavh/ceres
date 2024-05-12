@@ -1,6 +1,6 @@
 import algorithms
 import random
-import freq_similarity
+from src import similarities
 
 non_hom = [{str(i):0 for i in range(30)} for j in range(30)]
 hom = [{str(i):288 for i in range(30)} for j in range(30)]

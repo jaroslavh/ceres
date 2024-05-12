@@ -63,3 +63,30 @@ def create_numba_dict(x: list):
             freq_dict[k] = int(v)
 
     return freq_dict
+
+
+@njit(fastmath=True)
+def cosine_sim(x, y):
+    result = 0.0
+    norm_x = 0.0
+    norm_y = 0.0
+    for i in range(x.shape[0]):
+        result += x[i] * y[i]
+        norm_x += x[i] ** 2
+        norm_y += y[i] ** 2
+
+    if norm_x == 0.0 and norm_y == 0.0:
+        return 1.0
+    elif norm_x == 0.0 or norm_y == 0.0:
+        return 0.0
+    else:
+        return result / np.sqrt(norm_x * norm_y)
+
+
+@njit(fastmath=True)
+def euclidean_sim(x, y):
+    """https://stats.stackexchange.com/questions/158279/how-i-can-convert-distance-euclidean-to-similarity-score"""
+    result = 0.0
+    for i in range(x.shape[0]):
+        result += (x[i] - y[i]) ** 2
+    return 1/(1+np.sqrt(result))

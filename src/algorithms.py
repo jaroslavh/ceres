@@ -64,36 +64,33 @@ def delta_medoids(samples: np.ndarray, distance_function, max_distance: float):
 
 
 def nndescent_reverse_neighbors(samples, coverage: float,
-                                sample_rate: float, similarity, K: int = None, max_distance: float = 0.6):
+                                sample_rate: float,
+                                dist_func,
+                                K: int = None,
+                                max_distance: float = 0.6):
     representatives = crs.select_representatives_for_one_class(samples,
                                                                distance_threshold=max_distance,
                                                                coverage=coverage,
                                                                sample_rate=sample_rate,
-                                                               dist_func=similarity,
+                                                               dist_func=dist_func,
                                                                pynndescent_k=K)
     return representatives
 
 
 def custom_nndescent_reverse_neighbors(samples, coverage: float,
-                                       sample_rate: float, similarity, K: int = None, threshold: float = 0.6):
-    if K == None:
-        sample_size = len(samples)
-        # K = int(np.ceil(np.log(len(samples) + 1))) + 2                        #A
-        # K = int(np.ceil(np.sqrt(len(samples) + 1) * (1 - threshold)))         #B
-        # K = int(np.sqrt(len(samples)/np.log(len(samples)))                    #C
-        # K = int(np.sqrt(len(samples)/np.log(len(samples))) * (1 - threshold))  #D
-        K = int(np.sqrt(sample_size / (np.log2(sample_size) * 2)) * (1 + (1 - threshold)))  # E
-        if K < 5:
-            K = 5
-
-    print('    K set to:', K)
+                                       sample_rate: float,
+                                       similarity,
+                                       K: int = None,
+                                       min_similarity: float = 0.6):
     knn_graph = nndescent.NNDescentFull(dataset=samples,
                                         similarity=similarity,
                                         K=K,
                                         sample_rate=sample_rate)
 
-    representatives = nndescent.getReprIndicesReverseNeighborsThreshold(knn_graph, coverage, threshold)
+    print(min_similarity)
+    representatives = nndescent.getReprIndicesReverseNeighborsThreshold(knn_graph, coverage, min_similarity)
     return representatives
+
 
 def ds3(matrix: np.ndarray, shape: int):
     """Wrapper for calling ds3 in matlab.

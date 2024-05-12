@@ -1,13 +1,12 @@
-# Implementation of NNDescent algorithm for fast kNN construction with generic
+# Implementation of NNDescent algorithm for fast kNN graph construction with generic
 # similarity measure.
 # src: http://www.ambuehler.ethz.ch/CDstore/www2011/proceedings/p577.pdf
 
 import random
 import numpy as np
-import pandas as pd
+import logging
 
-from crs import highest_count_index_generator, ReverseNeighborhood
-from sample_nn import SampleNN
+from src.sample_nn import SampleNN
 
 def sample(dataset: list, n: int):
     """Return random sample from the whole dataset.
@@ -61,15 +60,18 @@ def NNDescentFull(dataset, similarity, K, sample_rate):
         B[index] = SampleNN(K=K, name=index, values=row, in_samples=sample(dataset, min(K, len(dataset))),
                             similarity=similarity)
     
-    scan = 0 #how many times distance metric is computed
+    # scan = 0  # how many times distance metric is computed
+    scan = np.zeros((len(dataset), len(dataset)))
+    scan[:] = np.nan
+    all_scan = 0
     old, new = {}, {}
     while True:
         for v in B.keys():
-            old[v] = {i.name for i in B[v].heap if i.flag == False}
+            old[v] = {i.name for i in B[v].heap if i.flag is False}
             sizeCounter = 0
-            new[v] = set() #TODO select nodes labeled True more efficiently
-            for i,j in enumerate(B[v].heap):
-                if j.flag == True:
+            new[v] = set()  # TODO select nodes labeled True more efficiently
+            for i, j in enumerate(B[v].heap):
+                if j.flag is True:
                     new[v].add(j.name)
                     j.flag = False
                     sizeCounter += 1
@@ -78,23 +80,33 @@ def NNDescentFull(dataset, similarity, K, sample_rate):
         oldR = reverseSet(old)
         newR = reverseSet(new)
         c = 0
-        tmpSim = float()
         for v in B.keys():
             old[v] = old[v].union(sampleNames(oldR[v], int(sample_rate*K)))
             new[v] = new[v].union(sampleNames(newR[v], int(sample_rate*K)))
             for u1 in new[v]:
                 u2_set = old[v].union({i for i in new[v] if u1 < i}) #selection of u2
                 for u2 in u2_set:
-                    if(u1 in B[u2].unique) and (u2 in B[u1].unique):
+                    if (u1 in B[u2].unique) and (u2 in B[u1].unique):
                         continue
-                    scan += 1
-                    tmpSim = similarity(dataset[u1], dataset[u2])
+                    if u1 == u2:
+                        tmpSim = 1.0
+                    else:
+                        if np.isnan(scan[u1, u2]):
+                            tmpSim = similarity(dataset[u1], dataset[u2])
+                            scan[u1, u2] = tmpSim
+                            scan[u2, u1] = tmpSim
+                            all_scan += 1
+                        else:
+                            tmpSim = scan[u1, u2]
                     c += B[u1].updateNN(name=B[u2].name, dist=tmpSim)
                     c += B[u2].updateNN(name=B[u1].name, dist=tmpSim)
         #print('C after whole run is', c)
         delta = 0.001
         if c < delta*K*len(dataset):
-            print('    kNN scan rate', (scan / (len(dataset) * (len(dataset) - 1)) / 2))
+            upper_tri = np.triu(scan, k=1).flatten()
+            number_sims = np.count_nonzero(upper_tri[~np.isnan(upper_tri)])
+
+            logging.info(f'\t\t\tkNN scan rate {(number_sims / (len(dataset) * (len(dataset) - 1)) / 2)}, {number_sims}, {all_scan}')
             #import csv
             #with open('scan_rates_final.csv', 'a') as f: #logging progress
                 #wr = csv.writer(f)
@@ -111,7 +123,7 @@ def getReprIndicesReverseNeighborsThreshold(knn_res: dict, coverage: float, sim_
     :type coverage: float
     :param sim_threshold: similarity under which the edges are not considered in reverse kNN
     :type sim_threshold: float
-    :return: list of indice labels that were selected as representatives
+    :return: list of indices labels that were selected as representatives
     :rtype: list
     """
     full_len = len(knn_res)

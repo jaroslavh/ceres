@@ -2,27 +2,24 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import pairwise_distances
 
-import freq_similarity
+from src import similarities
 
 
 class Dataset(object):
-    """Store training and testing parts of data in this object.
-    
-    :param X_train: training set sample keys for data dictionary
-    :type X_train: np.ndarray
-    :param X_test: testing set samples
-    :type X_test: np.ndarray
-    :param y_train: training set labels
-    :type y_train: np.ndarray
-    :param y_test: testing set labels
-    :type y_test: np.ndarray
-    :param classes: labels of classes present in this dataset
-    :type classes: list
-    """
+    """Store training and testing parts of data in this object."""
 
-    # NOTE REVISITED
     def __init__(self, X_train: np.ndarray, X_test: np.ndarray, y_train: np.ndarray, y_test: np.ndarray):
-        """Constructor method."""
+        """Constructor method.
+
+        :param X_train: training set sample keys for data dictionary
+        :type X_train: np.ndarray
+        :param X_test: testing set samples
+        :type X_test: np.ndarray
+        :param y_train: training set labels
+        :type y_train: np.ndarray
+        :param y_test: testing set labels
+        :type y_test: np.ndarray
+        """
 
         self.classes = list(set(y_test).union(set(y_train)))
         self.train = self.initialize_train_classes(X_train, y_train)
@@ -47,9 +44,9 @@ class Dataset(object):
         # TODO random state always the same for reproducibility, change later
         return cls(*train_test_split(samples, labels, test_size=test_size, random_state=None))
 
-    # NOTE REVISITED
     def initialize_train_classes(self, X_train, y_train):
-        """Return classes with their members as a dict. e.g. classes = {'cat':[
+        """The training is done per class, hence this preparation into a dictionary. Return classes with their members
+        as a dict. e.g. classes = {'cat':[]}
         
         :return: classes with their identifiers {class_id:{set of members}}
         :rtype: dict
@@ -153,7 +150,7 @@ class Dataset(object):
 
         if quantile is None:
             hist = np.histogram(frequencies, bins=[x / 100.0 for x in range(0, 105, 5)])
-            quantile = hist[1][np.argmax(hist[0]) + 1]
+            quantile = hist[1][np.argmax(hist[0]) + 1]  # MOST PREVALENT DISTANCES + 1 TO GET CEIL
             # print(f"Histogram: {hist}")
             # print(f"Quantile for similarity threshold is set to: {quantile}")
         return np.quantile(frequencies, quantile)

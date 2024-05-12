@@ -3,6 +3,7 @@ import time
 from src.dataset import Dataset
 from src.result import Result
 import src.algorithms as algorithms
+import logging
 
 
 class Experiment(object):
@@ -30,7 +31,7 @@ class Experiment(object):
         self.results = [None] * len(self.algorithms)
         self.distance_thresholds = distance_thresholds
 
-    def run(self, logger):
+    def run(self):
         """Run the experiment that was set up.
 
         :return: list of Results for each algorithm in algorithms dataset
@@ -40,17 +41,21 @@ class Experiment(object):
         results = []
         for algorithm_func, params in zip(self.algorithms, self.algorithm_params):
             results.append(Result(algorithm_func.__name__, params))
-            logger.info(f"\t\tAlgorithm: {algorithm_func.__name__}")
+            logging.info(f"\t\tAlgorithm: {algorithm_func.__name__}, {self.algorithm_params}")
             for class_id in self.dataset.classes:  # TODO  remove comment class_samples in self.dataset.train.items():
                 t0 = time.time()
 
                 # specific handling for DS3 algorithm
                 if algorithm_func == algorithms.ds3:
                     data = self.dataset.get_class_full_matrix(class_id, params['similarity'])
-                    logger.info("\t\t\tFull-similarity matrix completed. DS3 starting.")
+                    logging.info("\t\t\tFull-similarity matrix completed. DS3 starting.")
                     prototype_indices = algorithm_func(data, len(data))
                 elif algorithm_func == algorithms.random_select:
                     prototype_indices = algorithm_func(self.dataset.train[class_id],  **params)
+                elif algorithm_func == algorithms.custom_nndescent_reverse_neighbors:
+                    prototype_indices = algorithm_func(self.dataset.train[class_id],
+                                                       min_similarity=self.distance_thresholds[class_id],
+                                                       **params)
                 # all other algorithms
                 else:
                     prototype_indices = algorithm_func(self.dataset.train[class_id],
@@ -60,5 +65,5 @@ class Experiment(object):
                 prototype = [self.dataset.train[class_id][i] for i in prototype_indices]
                 results[-1].add_cluster_prototype(prototype, class_id)
                 t1 = time.time()
-                logger.info(f"\t\t\tPrototype size {class_id}: {len(prototype)}, Time {t1 - t0}")
+                logging.info(f"\t\t\tPrototype size {class_id}: {len(prototype)}, Time {t1 - t0}")
         return results

@@ -3,7 +3,13 @@ import pandas as pd
 import csv
 import json
 
-from dataset import Dataset
+from src.dataset import Dataset
+import sklearn.model_selection
+from sklearn import datasets
+from src.similarities import create_numba_dict
+
+
+
 
 
 # NOTE REVISITED
@@ -215,3 +221,39 @@ def get_real_network_data(sample_path, label_path):
             no_label += 1
 
     return X, y
+
+
+def get_internet_advertisements(path: str):
+    dataset = pd.read_csv(path)
+    X = dataset['jacc'].tolist()
+    y = []
+    for label in dataset['label']:
+        if label == 'nonad.':
+            y.append(0)
+        else:
+            y.append(1)
+    return X, y
+
+
+def get_dataset(name: str, path: str, random_state: int = 42, test_size=0.1) -> Dataset:
+    if name == '20newsgroups':
+        X, y = datasets.fetch_20newsgroups_vectorized(subset="all", return_X_y=True)
+        X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, test_size=test_size, random_state=random_state)
+        return Dataset(X_train.toarray(), X_test.toarray(), y_train, y_test)
+
+    elif name == 'network':
+        X, y = get_real_network_data(f'{path}/data_288_windows.json', f'{path}/labels.tsv')
+        X = [[(k, v) for k, v in item.items()] for item in X]
+        X = [create_numba_dict(i) for i in X]
+        X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, test_size=test_size, random_state=random_state)
+        return Dataset(X_train, X_test, y_train, y_test)
+    elif name == 'mnist-fashion':
+        import src.mnist_reader as mnist_reader
+        # loading training data
+        X, y = mnist_reader.load_mnist(path, kind='train')
+        # loading testing data - reducing size for speed :)
+        X_train, _, y_train, _ = sklearn.model_selection.train_test_split(X, y,  test_size=test_size, random_state=random_state)
+        X_test, y_test = mnist_reader.load_mnist(path, kind='t10k')
+        return Dataset(X_train, X_test, y_train, y_test)
+    else:
+        print(f"Unknown dataset name '{name}'.")

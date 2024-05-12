@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 jupyterlab = "*"
+jupyter = "*"
 numpy = "*"
 pandas = "*"
 matplotlib = "*"
@@ -15,6 +16,11 @@ h5py = "*"
 plotly = "*"
 numba = "*"
 matlabengine = "*"
+openml = "*"
+scikit-dimension = "*"
+tqdm = "*"
+seaborn = "*"
+line-profiler = "*"
 
 [dev-packages]
 
