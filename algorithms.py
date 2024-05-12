@@ -1,6 +1,8 @@
 import numpy as np
-
 import crs
+
+import matlab.engine
+
 import nndescent
 
 
@@ -122,25 +124,25 @@ def custom_nndescent_reverse_neighbors(samples, coverage: float,
     representatives = nndescent.getReprIndicesReverseNeighborsThreshold(knn_graph, coverage, threshold)
     return representatives
 
-# def ds3(matrix: np.ndarray, shape: int):
-#     """Wrapper for calling ds3 in matlab.
-#
-#     :param matrix: square matrix of shape*shape
-#     :type matrix: np.ndarray
-#     :param shape: int
-#     :type shape: size of matrix
-#     :return: int
-#     :rtype: matlab.double or float (float if only one representative is selected
-#     """
-#     eng = matlab.engine.start_matlab()
-#     eng.cd('DS3_v1.0')
-#     matrix = matrix.flatten().tolist()
-#
-#     M = eng.cell2mat(matrix)
-#     ret = eng.func_run_ds3(M, shape)
-#     eng.quit()
-#     # transform results from float to int and subtract 1 -> matlab to python index correction
-#     if type(ret) == float:
-#         print(f"Found only one representative {ret}")
-#         return [int(ret) - 1]
-#     return [int(i) - 1 for i in ret[0]]
+def ds3(matrix: np.ndarray, shape: int):
+    """Wrapper for calling ds3 in matlab.
+
+    :param matrix: square matrix of shape*shape
+    :type matrix: np.ndarray
+    :param shape: int
+    :type shape: size of matrix
+    :return: int
+    :rtype: matlab.double or float (float if only one representative is selected
+    """
+    eng = matlab.engine.start_matlab()
+    eng.cd('DS3_v1.0')
+    matrix = matrix.flatten().tolist()
+
+    M = eng.cell2mat(matrix)
+    ret = eng.func_run_ds3(M, shape)
+    eng.quit()
+    # transform results from float to int and subtract 1 -> matlab to python index correction
+    if type(ret) == float:
+        print(f"Found only one representative {ret}")
+        return [int(ret) - 1]
+    return [int(i) - 1 for i in ret[0]]

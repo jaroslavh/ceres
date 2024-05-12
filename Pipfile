@@ -14,6 +14,7 @@ pynndescent = "*"
 h5py = "*"
 plotly = "*"
 numba = "*"
+matlabengine = "*"
 
 [dev-packages]
 
