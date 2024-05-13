@@ -46,12 +46,13 @@ class Experiment(object):
                 t0 = time.time()
 
                 # specific handling for DS3 algorithm
-                if algorithm_func == algorithms.ds3:
-                    data = self.dataset.get_class_full_matrix(class_id, params['similarity'])
-                    logging.info("\t\t\tFull-similarity matrix completed. DS3 starting.")
-                    prototype_indices = algorithm_func(data, len(data))
-                elif algorithm_func == algorithms.random_select:
-                    prototype_indices = algorithm_func(self.dataset.train[class_id],  **params)
+                if algorithm_func == algorithms.random_select:
+                    prototype_indices = algorithm_func(self.dataset.train[class_id], **params)
+                # elif algorithm_func == algorithms.ds3:
+                #     data = self.dataset.get_class_full_matrix(class_id, params['similarity'])
+                #     logging.info("\t\t\tFull-similarity matrix completed. DS3 starting.")
+                #     prototype_indices = algorithm_func(data, len(data))
+
                 elif algorithm_func == algorithms.custom_nndescent_reverse_neighbors:
                     prototype_indices = algorithm_func(self.dataset.train[class_id],
                                                        min_similarity=self.distance_thresholds[class_id],

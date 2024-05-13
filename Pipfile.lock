@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "30adb386f2683a28c393eae09d91ac88647db1473beaa1450de3f9a19d2f79bd"
+            "sha256": "1b9e20b0a4347c488535cc3bb66aa0f577c75d18dee74a431f417dd85d903185"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -1004,14 +1004,6 @@
             ],
             "markers": "python_version >= '3.7'",
             "version": "==2.1.5"
-        },
-        "matlabengine": {
-            "hashes": [
-                "sha256:dde548046dfc15a565acce9b24410fc0881769031b66d28f78463a1d09c67881"
-            ],
-            "index": "pypi",
-            "markers": "python_version < '3.12' and python_version >= '3.9'",
-            "version": "==24.1.2"
         },
         "matplotlib": {
             "hashes": [

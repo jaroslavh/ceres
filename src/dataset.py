@@ -126,8 +126,8 @@ class Dataset(object):
 
         return self.__calculate_homogeneity(class_samples, similarity)
 
-    def get_class_distance_threshold(self, class_id: str, quantile: float, similarity,
-                                     sample_rate: float = 0.1, max_sample_size: int = 1000):
+    def get_class_threshold(self, class_id: str, quantile: float, similarity,
+                            sample_rate: float = 0.1, max_sample_size: int = 1000, similarity_type: str = 'sim'):
 
         # TODO limit by max_sample_size
         # get all class samples
@@ -150,7 +150,10 @@ class Dataset(object):
 
         if quantile is None:
             hist = np.histogram(frequencies, bins=[x / 100.0 for x in range(0, 105, 5)])
-            quantile = hist[1][np.argmax(hist[0]) + 1]  # MOST PREVALENT DISTANCES + 1 TO GET CEIL
+            if similarity_type == 'sim':
+                quantile = hist[1][np.argmax(hist[0]) + 1]  # MOST PREVALENT DISTANCES + 1 TO GET CEIL
+            else:
+                quantile = hist[1][np.argmax(hist[0]) - 1]  # MOST PREVALENT DISTANCES + 1 TO GET CEIL
             # print(f"Histogram: {hist}")
             # print(f"Quantile for similarity threshold is set to: {quantile}")
         return np.quantile(frequencies, quantile)
@@ -204,7 +207,7 @@ class Dataset(object):
     #     return matrix
 
     def get_class_full_matrix(self, class_id, sim):
-        if sim == freq_similarity.freq_sim:
+        if sim == similarities.freq_sim:
             data = self.train[class_id]
             matrix = np.ndarray(shape=(len(data), len(data)), dtype=float)
             for i, sample_i in enumerate(data):
