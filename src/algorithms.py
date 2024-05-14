@@ -3,7 +3,7 @@ from collections import defaultdict
 import numpy as np
 import src.crs as crs
 
-import matlab.engine
+# import matlab.engine
 import logging
 import src.nndescent as nndescent
 
@@ -87,7 +87,6 @@ def custom_nndescent_reverse_neighbors(samples, coverage: float,
                                         K=K,
                                         sample_rate=sample_rate)
 
-    print(min_similarity)
     representatives = nndescent.getReprIndicesReverseNeighborsThreshold(knn_graph, coverage, min_similarity)
     return representatives
 

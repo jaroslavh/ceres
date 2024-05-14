@@ -66,6 +66,7 @@ def select_representatives_for_one_class(datapoints, distance_threshold, coverag
                 if not empty_neighbors_flag:
                     empty_neighbors_flag = True
                     logging.info(
-                        f"\tReached only coverage of {len(covered) / class_size:4.3f}, the rest of pivots are added without any neighbors.., currently there is {len(selected_representatives)} selected.")
+                        f"\tReached only coverage of {len(covered) / class_size:4.3f}, with {len(selected_representatives)} representatives. The rest of datapoints are considered outliers.")
+                    break
 
     return selected_representatives

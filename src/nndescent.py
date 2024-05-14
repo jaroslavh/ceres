@@ -144,7 +144,7 @@ def getReprIndicesReverseNeighborsThreshold(knn_res: dict, coverage: float, sim_
     while len(neighbors) / full_len < coverage:
         ix = np.where(counts == max(counts))[0][0]
         if counts[ix] == -1:
-            print(counts)
+            print(f"NEVER{counts}")
             break
         elif ix not in neighbors:
             selected.append(ix)

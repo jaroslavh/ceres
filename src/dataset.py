@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import pairwise_distances
-
+from kneed import KneeLocator
 from src import similarities
 
 
@@ -157,6 +157,38 @@ class Dataset(object):
             # print(f"Histogram: {hist}")
             # print(f"Quantile for similarity threshold is set to: {quantile}")
         return np.quantile(frequencies, quantile)
+
+    def get_class_knee(self, class_id: str, similarity,
+                       sample_rate: float = 0.1, similarity_type: str = 'sim'):
+
+        # TODO limit by max_sample_size
+        # get all class samples
+        class_samples = self.train[class_id] # TODO move sample to a func
+        class_size = len(class_samples)
+        random_samples = [class_samples[i] for i in
+                          np.random.choice(range(class_size), int(sample_rate * class_size))]
+
+        # calculate frequencies of similarity matrix
+        frequencies = []
+        try:
+            frequencies = np.reshape(pairwise_distances(random_samples, metric=similarity), -1)
+        except:
+            for i, i_val in enumerate(random_samples):
+                for j, j_val in enumerate(random_samples):
+                    if j <= i:
+                        frequencies.append(similarity(i_val, j_val))
+                    else:
+                        break
+        if similarity_type == 'sim':
+            frequencies = [1 - i for i in frequencies]
+
+        kneedle = KneeLocator(x=range(0, len(frequencies)), y=np.sort(frequencies), S=10.0, curve="convex",
+                              direction="increasing")
+        # kneedle.plot_knee_normalized()
+        if similarity_type == 'sim':
+            return 1 - kneedle.knee_y
+        else:
+            return kneedle.knee_y
 
     # NOTE REVISITED
     @staticmethod

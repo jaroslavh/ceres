@@ -50,24 +50,17 @@ def get_accuracy(matrix: np.ndarray):
     return accuracies
 
 
-def plot_confusion_matrices(matrices, titles, mat_labels, save_file=None):
+def plot_confusion_matrices(matrices, titles, tick_labels, save_file=None):
     """Creates a plot of confusion matrices.
         Assumes matrices to be a list NxN np.ndarray. Titles to be a list of strings
             and header to be a list of tick_labels to be used for rows.
         Returns a figure that can then be plotted."""
     subplot_num = len(titles)
-    fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(1, subplot_num, figsize=(32, 12))
-    ax_list = [ax1, ax2, ax3, ax4,  ax5, ax6]
+    fig, axs = plt.subplots(nrows=1, ncols=subplot_num, figsize=(32, 12))
+    axs = np.array(axs)
 
-    for index in range(subplot_num):
-        ax = ax_list[index]
-
-        if index >= len(matrices):
-            ax.set_visible(False)
-            continue
-
+    for index, ax in enumerate(axs.reshape(-1)):
         matrix = matrices[index]
-        tick_labels = mat_labels[index]
         ax.imshow(matrix, cmap='binary')
 
         # We want to show all ticks...

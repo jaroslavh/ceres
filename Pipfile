@@ -20,6 +20,7 @@ scikit-dimension = "*"
 tqdm = "*"
 seaborn = "*"
 line-profiler = "*"
+kneed = "*"
 
 [dev-packages]
 
