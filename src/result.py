@@ -14,8 +14,9 @@ class Result(object):
         # prototypes # TODO make it dict and retrieve for classification
         self.samples = []
         self.labels = []
+        self.scan_rates = {}
 
-    def add_cluster_prototype(self, samples: list, label: int):
+    def add_cluster_prototype(self, samples: list, label: int, scan_rate: float = None):
         """Add cluster prototype to result.
         
         :param samples: list of samples to be added to the Result
@@ -25,4 +26,5 @@ class Result(object):
         """
         self.samples += samples
         self.labels += [label] * len(samples)
+        self.scan_rates[label] = scan_rate
     

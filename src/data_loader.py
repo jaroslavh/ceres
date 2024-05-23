@@ -240,7 +240,6 @@ def get_dataset(name: str, path: str, random_state: int = 42, test_size=0.1) -> 
         X, y = datasets.fetch_20newsgroups_vectorized(subset="all", return_X_y=True)
         X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, test_size=test_size, random_state=random_state)
         return Dataset(X_train.toarray(), X_test.toarray(), y_train, y_test)
-
     elif name == 'network':
         X, y = get_real_network_data(f'{path}/data_288_windows.json', f'{path}/labels.tsv')
         X = [[(k, v) for k, v in item.items()] for item in X]
@@ -254,6 +253,15 @@ def get_dataset(name: str, path: str, random_state: int = 42, test_size=0.1) -> 
         # loading testing data - reducing size for speed :)
         X_train, _, y_train, _ = sklearn.model_selection.train_test_split(X, y,  test_size=test_size, random_state=random_state)
         X_test, y_test = mnist_reader.load_mnist(path, kind='t10k')
+        return Dataset(X_train, X_test, y_train, y_test)
+    elif name == 'internet-advertisements':
+        cols = pd.read_csv(f"{path}/ad.names", header=None)[0]
+        x = pd.read_csv(f"{path}/ad.data", sep=",", dtype=str, header=None,names=cols)
+        df = x.iloc[:, 3:]
+        df = df.replace('?', None).dropna()  # removing invalid values
+        X = df.loc[:, df.columns != 'label'].to_numpy().astype(int)
+        y = df['label'].tolist()
+        X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, test_size=test_size, random_state=random_state)
         return Dataset(X_train, X_test, y_train, y_test)
     else:
         print(f"Unknown dataset name '{name}'.")

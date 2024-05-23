@@ -82,13 +82,13 @@ def custom_nndescent_reverse_neighbors(samples, coverage: float,
                                        similarity,
                                        K: int = None,
                                        min_similarity: float = 0.6):
-    knn_graph = nndescent.NNDescentFull(dataset=samples,
+    knn_graph, scan_rate = nndescent.NNDescentFull(dataset=samples,
                                         similarity=similarity,
                                         K=K,
                                         sample_rate=sample_rate)
 
     representatives = nndescent.getReprIndicesReverseNeighborsThreshold(knn_graph, coverage, min_similarity)
-    return representatives
+    return representatives, scan_rate
 
 
 # def ds3(matrix: np.ndarray, shape: int):

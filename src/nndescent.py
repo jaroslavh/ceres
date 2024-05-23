@@ -8,6 +8,7 @@ import logging
 
 from src.sample_nn import SampleNN
 
+
 def sample(dataset: list, n: int):
     """Return random sample from the whole dataset.
 
@@ -19,6 +20,7 @@ def sample(dataset: list, n: int):
     :rtype: list"""
     indices = np.random.choice(range(len(dataset)), n, replace=False)
     return [dataset[i] for i in indices]
+
 
 def sampleNames(name_set: set, n: int):
     """Randomly sample n names from name set.
@@ -34,20 +36,31 @@ def sampleNames(name_set: set, n: int):
         return name_set
     return random.sample(name_set, n)
 
+
 def reverseSetOld(B):
     """Assumes B a collection of sets.
        Returns reverse of those sets."""
     B_keys = B.keys()
-    #this is nice but not optimal, ~40% of time is spent here
-    return {v:{i for i in B_keys if v in B[i]} for v in B_keys} 
+    # this is nice but not optimal, ~40% of time is spent here
+    return {v: {i for i in B_keys if v in B[i]} for v in B_keys}
+
 
 def reverseSet(B):
-    ret = {v:set() for v in B.keys()}
+    ret = {v: set() for v in B.keys()}
 
     for v in B.keys():
         for n in B[v]:
             ret[n].add(v)
     return ret
+
+
+def nan_triu(m, k):
+    """Creates an upper triangular matrix like np.triu but with nan under the diagonal"""
+    m = np.asanyarray(m)
+    mask = np.tri(*m.shape[-2:], k=k - 1, dtype=bool)
+
+    return np.where(mask, np.nan, m)
+
 
 def NNDescentFull(dataset, similarity, K, sample_rate):
     """Assumes dataset a pandas.Dataframe, similarity a similarity measure function with 2 arguments,
@@ -59,7 +72,7 @@ def NNDescentFull(dataset, similarity, K, sample_rate):
     for index, row in enumerate(dataset):
         B[index] = SampleNN(K=K, name=index, values=row, in_samples=sample(dataset, min(K, len(dataset))),
                             similarity=similarity)
-    
+
     # scan = 0  # how many times distance metric is computed
     scan = np.zeros((len(dataset), len(dataset)))
     scan[:] = np.nan
@@ -75,16 +88,16 @@ def NNDescentFull(dataset, similarity, K, sample_rate):
                     new[v].add(j.name)
                     j.flag = False
                     sizeCounter += 1
-                if sizeCounter >= sample_rate*K:
+                if sizeCounter >= sample_rate * K:
                     break
         oldR = reverseSet(old)
         newR = reverseSet(new)
         c = 0
         for v in B.keys():
-            old[v] = old[v].union(sampleNames(oldR[v], int(sample_rate*K)))
-            new[v] = new[v].union(sampleNames(newR[v], int(sample_rate*K)))
+            old[v] = old[v].union(sampleNames(oldR[v], int(sample_rate * K)))
+            new[v] = new[v].union(sampleNames(newR[v], int(sample_rate * K)))
             for u1 in new[v]:
-                u2_set = old[v].union({i for i in new[v] if u1 < i}) #selection of u2
+                u2_set = old[v].union({i for i in new[v] if u1 < i})  # selection of u2
                 for u2 in u2_set:
                     if (u1 in B[u2].unique) and (u2 in B[u1].unique):
                         continue
@@ -100,18 +113,13 @@ def NNDescentFull(dataset, similarity, K, sample_rate):
                             tmpSim = scan[u1, u2]
                     c += B[u1].updateNN(name=B[u2].name, dist=tmpSim)
                     c += B[u2].updateNN(name=B[u1].name, dist=tmpSim)
-        #print('C after whole run is', c)
         delta = 0.001
-        if c < delta*K*len(dataset):
-            upper_tri = np.triu(scan, k=1).flatten()
-            number_sims = np.count_nonzero(upper_tri[~np.isnan(upper_tri)])
-
-            logging.info(f'\t\t\tkNN scan rate {(number_sims / (len(dataset) * (len(dataset) - 1)) / 2)}, {number_sims}, {all_scan}')
-            #import csv
-            #with open('scan_rates_final.csv', 'a') as f: #logging progress
-                #wr = csv.writer(f)
-                #wr.writerow([K, (scan / (len(dataset) * (len(dataset) - 1)) / 2)])
-            return B
+        if c < delta * K * len(dataset):
+            upper_tri = nan_triu(scan, k=1).flatten()
+            number_sims = upper_tri[~np.isnan(upper_tri)].shape[0]
+            scan_rate = number_sims / ((len(dataset) * (len(dataset) - 1)) / 2)
+            logging.info(f'\t\t\tkNN scan rate {scan_rate}, {number_sims}, {all_scan}')
+            return B, scan_rate
 
 
 def getReprIndicesReverseNeighborsThreshold(knn_res: dict, coverage: float, sim_threshold: float):

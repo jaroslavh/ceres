@@ -126,15 +126,10 @@ class Dataset(object):
 
         return self.__calculate_homogeneity(class_samples, similarity)
 
-    def get_class_threshold(self, class_id: str, quantile: float, similarity,
-                            sample_rate: float = 0.1, max_sample_size: int = 1000, similarity_type: str = 'sim'):
-
-        # TODO limit by max_sample_size
+    def get_class_threshold(self, class_id: str, similarity, quantile: float = None,
+                            sample_rate: float = 0.1, similarity_type: str = 'sim'):
         # get all class samples
-        class_samples = self.train[class_id]
-        class_size = len(class_samples)
-        random_samples = [class_samples[i] for i in
-                          np.random.choice(range(class_size), int(sample_rate * class_size))]
+        random_samples = self.sample_array(self.train[class_id], sample_rate)
 
         # calculate frequencies of similarity matrix
         frequencies = []
@@ -144,29 +139,32 @@ class Dataset(object):
             for i, i_val in enumerate(random_samples):
                 for j, j_val in enumerate(random_samples):
                     if j <= i:
-                        frequencies.append(similarity(i_val, j_val))
+                        tmp_sim = similarity(i_val, j_val)
+                        if tmp_sim > 0:
+                            frequencies.append(tmp_sim)
                     else:
                         break
 
         if quantile is None:
-            hist = np.histogram(frequencies, bins=[x / 100.0 for x in range(0, 105, 5)])
-            if similarity_type == 'sim':
-                quantile = hist[1][np.argmax(hist[0]) + 1]  # MOST PREVALENT DISTANCES + 1 TO GET CEIL
-            else:
-                quantile = hist[1][np.argmax(hist[0]) - 1]  # MOST PREVALENT DISTANCES + 1 TO GET CEIL
-            # print(f"Histogram: {hist}")
-            # print(f"Quantile for similarity threshold is set to: {quantile}")
-        return np.quantile(frequencies, quantile)
+            threshold = np.mean(frequencies)
+        else:
+            threshold = np.quantile(frequencies, quantile)
 
-    def get_class_knee(self, class_id: str, similarity,
-                       sample_rate: float = 0.1, similarity_type: str = 'sim'):
+        return threshold
 
-        # TODO limit by max_sample_size
+    @staticmethod
+    def sample_array(arr, sample_rate):
+        class_size = len(arr)
+        sample_size = int(sample_rate * class_size)
+        if sample_size < 50:
+            sample_size = max(50, class_size)
+        return [arr[i] for i in np.random.choice(range(class_size), sample_size)]
+
+    def get_class_knee(self, class_id: str, similarity, sample_rate: float = 0.1):
         # get all class samples
-        class_samples = self.train[class_id] # TODO move sample to a func
-        class_size = len(class_samples)
-        random_samples = [class_samples[i] for i in
-                          np.random.choice(range(class_size), int(sample_rate * class_size))]
+        class_samples = self.train[class_id]
+        random_samples = self.sample_array(class_samples, sample_rate)
+
 
         # calculate frequencies of similarity matrix
         frequencies = []
@@ -179,16 +177,15 @@ class Dataset(object):
                         frequencies.append(similarity(i_val, j_val))
                     else:
                         break
-        if similarity_type == 'sim':
-            frequencies = [1 - i for i in frequencies]
 
-        kneedle = KneeLocator(x=range(0, len(frequencies)), y=np.sort(frequencies), S=10.0, curve="convex",
-                              direction="increasing")
-        # kneedle.plot_knee_normalized()
-        if similarity_type == 'sim':
-            return 1 - kneedle.knee_y
-        else:
-            return kneedle.knee_y
+        kneedle = KneeLocator(x=range(1, len(frequencies)+1), y=np.sort(frequencies), S=25.0, curve="convex",
+                            direction="increasing")
+        selected_point = kneedle.knee_y
+        kneedle.plot_knee()  # if you want to see the plot
+        if selected_point is None:
+            selected_point = max(frequencies)
+
+        return selected_point
 
     # NOTE REVISITED
     @staticmethod

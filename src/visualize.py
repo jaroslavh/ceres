@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from IPython.display import Markdown, display
+from operator import truediv
 
 
 def resultDF(labels, columns):
@@ -20,20 +21,26 @@ def resultDF(labels, columns):
     return res
 
 
-def calculate_precision_recall(matrix: np.ndarray, labels, dataset):
+def calculate_precision_recall(confusion_matrix: np.ndarray, labels, dataset):
     """Assumes matrix to be a np.ndarray of confusion matrix (regular matrix). """
     class_list = dataset.classes
     sizes = [dataset.get_class_train_size(cls) for cls in class_list]
     selected = [labels.count(cls) for cls in class_list]
-    precisions = []
-    recalls = []
-    for row_index, row in enumerate(matrix):
-        TP = matrix[row_index][row_index]
-        FP = sum([i[row_index] for i in matrix]) - row[row_index]
-        FN = sum(row) - row[row_index]
-        precisions.append(TP / (TP + FP))
-        recalls.append(TP / (TP + FN))
+
+    tp = np.diag(confusion_matrix)
+    precisions = list(map(truediv, tp, np.sum(confusion_matrix, axis=0)))
+    recalls = list(map(truediv, tp, np.sum(confusion_matrix, axis=1)))
     return [class_list, sizes, selected, precisions, recalls]
+
+    # precisions = []
+    # recalls = []
+    # for row_index, row in enumerate(confusion_matrix):
+    #     TP = confusion_matrix[row_index][row_index]
+    #     FP = sum([i[row_index] for i in confusion_matrix]) - row[row_index]
+    #     FN = sum(row) - row[row_index]
+    #     precisions.append(TP / (TP + FP))
+    #     recalls.append(TP / (TP + FN))
+    # return [class_list, sizes, selected, precisions, recalls]
 
 
 def get_accuracy(matrix: np.ndarray):

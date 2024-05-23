@@ -1,8 +1,18 @@
 import numpy as np
+import pynndescent.distances
 from numba import njit
 from numba.typed import Dict
 from numba.core import types
 
+
+@njit
+def freq_dist(host_a, host_b, timewindow_num: int = 288):
+    """Convert freq_sim to distance between two hosts"""
+    return 1 - freq_sim(host_a, host_b, timewindow_num)
+
+@njit
+def jaccard_simlarity(a, b):
+    return 1 - pynndescent.distances.jaccard(a, b)
 
 @njit
 def freq_sim(host_a, host_b, timewindow_num: int = 288):
